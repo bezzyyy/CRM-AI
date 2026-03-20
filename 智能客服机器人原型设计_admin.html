@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>业务分析 - 智能客服报告</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+<style>
+    @keyframes pulse-live {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.1); }
+    }
+    .live-indicator { animation: pulse-live 2s ease-in-out infinite; }
+</style>
+</head>
+<body class="bg-[#F8FAFC] min-h-screen font-sans">
+<!-- 侧边栏导航 -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-[#1E293B] text-white z-50">
+<div class="p-6 flex items-center gap-3 border-b border-gray-700">
+<span class="iconify text-3xl text-blue-400" data-icon="lucide:layout-dashboard"></span>
+<h1 class="font-bold text-lg tracking-wider">AI INSIGHT</h1>
+</div>
+<nav class="p-4 space-y-2">
+<div class="px-4 py-3 text-xs text-gray-500 uppercase font-bold">Main</div>
+<a class="flex items-center gap-4 px-4 py-3 bg-blue-600 rounded-xl text-white transition-all shadow-lg shadow-blue-900/20" href="#">
+<span class="iconify text-xl" data-icon="solar:chart-2-linear"></span>
+<span>核心概览</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-gray-400 hover:bg-gray-800 rounded-xl transition-all" href="智能客服机器人原型设计_agent.html">
+<span class="iconify text-xl" data-icon="solar:user-speak-linear"></span>
+<span>人工监控</span>
+</a>
+<div class="px-4 py-3 text-xs text-gray-500 uppercase font-bold pt-6">Advanced</div>
+<a class="flex items-center gap-4 px-4 py-3 text-gray-400 hover:bg-gray-800 rounded-xl transition-all" href="#">
+<span class="iconify text-xl" data-icon="solar:plain-3-linear"></span>
+<span>话术优化建议</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-gray-400 hover:bg-gray-800 rounded-xl transition-all" href="#">
+<span class="iconify text-xl" data-icon="solar:shield-warning-linear"></span>
+<span>缺陷洞察</span>
+</a>
+</nav>
+</aside>
+<main class="ml-64 p-8">
+<!-- Header -->
+<header class="flex justify-between items-center mb-8">
+<div>
+<h2 class="text-2xl font-bold text-slate-800">业务运营分析报告</h2>
+<p class="text-gray-500 mt-1">数据统计截止: <span id="data-timestamp">2026年03月19日 14:00</span></p>
+</div>
+<div class="flex gap-4">
+<div class="bg-white px-4 py-2 border rounded-xl flex items-center gap-2 cursor-pointer shadow-sm">
+<span class="iconify text-gray-400" data-icon="solar:calendar-linear"></span>
+<span class="text-sm">最近7天</span>
+</div>
+<button class="bg-blue-600 text-white px-6 py-2 rounded-xl shadow-md flex items-center gap-2 font-medium">
+<span class="iconify" data-icon="solar:download-linear"></span>
+                导出报告
+            </button>
+</div>
+</header>
+<!-- 实时状态通知 -->
+<div class="mb-6 bg-gradient-to-r from-green-50 to-blue-50 border border-green-100 rounded-xl p-4 flex items-center justify-between" id="realtime-banner">
+<div class="flex items-center gap-3">
+<span class="w-3 h-3 bg-green-500 rounded-full live-indicator"></span>
+<span class="font-medium text-slate-700">实时数据监控已开启</span>
+</div>
+<div class="flex gap-6 text-sm">
+<span class="text-gray-500">当前在线会话: <span class="font-bold text-slate-800" id="online-sessions-count">0</span></span>
+<span class="text-gray-500">待接入: <span class="font-bold text-yellow-600" id="pending-count">0</span></span>
+<span class="text-gray-500">今日新增: <span class="font-bold text-green-600" id="today-new-count">0</span></span>
+</div>
+</div>
+<!-- KPI Cards -->
+<div class="grid grid-cols-4 gap-6 mb-8">
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+<div class="text-gray-400 text-sm mb-2 flex items-center justify-between">
+                总咨询人次
+                <span class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+<span class="iconify" data-icon="solar:users-group-rounded-linear"></span>
+</span>
+</div>
+<div class="text-2xl font-bold mb-1" id="kpi-total-consults">42,891 人</div>
+<div class="text-xs text-green-500 font-medium flex items-center gap-1">
+<span class="iconify" data-icon="solar:trending-up-linear"></span>
+                +12.4% <span class="text-gray-400">较上周</span>
+</div>
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+<div class="text-gray-400 text-sm mb-2 flex items-center justify-between">
+                AI 纯拦截率
+                <span class="p-1.5 bg-green-50 text-green-600 rounded-lg">
+<span class="iconify" data-icon="tabler:robot"></span>
+</span>
+</div>
+<div class="text-2xl font-bold mb-1" id="kpi-ai-rate">82.35%</div>
+<div class="text-xs text-green-500 font-medium flex items-center gap-1">
+<span class="iconify" data-icon="solar:trending-up-linear"></span>
+                +3.1% <span class="text-gray-400">优于平均</span>
+</div>
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+<div class="text-gray-400 text-sm mb-2 flex items-center justify-between">
+                人工转接率
+                <span class="p-1.5 bg-red-50 text-red-600 rounded-lg">
+<span class="iconify" data-icon="solar:user-hand-up-linear"></span>
+</span>
+</div>
+<div class="text-2xl font-bold mb-1" id="kpi-transfer-rate">7.4%</div>
+<div class="text-xs text-red-500 font-medium flex items-center gap-1">
+<span class="iconify" data-icon="solar:trending-down-linear"></span>
+                -0.8% <span class="text-gray-400">健康指标</span>
+</div>
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+<div class="text-gray-400 text-sm mb-2 flex items-center justify-between">
+                满意度CSAT
+                <span class="p-1.5 bg-yellow-50 text-yellow-600 rounded-lg">
+<span class="iconify" data-icon="solar:star-linear"></span>
+</span>
+</div>
+<div class="text-2xl font-bold mb-1" id="kpi-satisfaction">4.8 / 5.0</div>
+<div class="text-xs text-blue-500 font-medium flex items-center gap-1">
+<span class="iconify" data-icon="solar:check-circle-linear"></span>
+                持平 <span class="text-gray-400">稳定态势</span>
+</div>
+</div>
+</div>
+<!-- Charts Area -->
+<div class="grid grid-cols-3 gap-6 mb-8">
+<div class="col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+<h3 class="font-bold text-slate-800 mb-6 font-bold flex items-center gap-2">
+<span class="w-1.5 h-6 bg-blue-600 rounded-full"></span>
+                AI对话趋势分析 (24H)
+            </h3>
+<div class="w-full h-[350px]" id="trendChart"></div>
+</div>
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+<h3 class="font-bold text-slate-800 mb-6 font-bold flex items-center gap-2">
+<span class="w-1.5 h-6 bg-blue-600 rounded-full"></span>
+                热门关注点分布
+            </h3>
+<div class="w-full h-[350px]" id="pieChart"></div>
+</div>
+</div>
+<!-- 运营列表 -->
+<div class="grid grid-cols-2 gap-6">
+<!-- 热点问题 -->
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-bold text-slate-800 flex items-center gap-2">
+<span class="w-1.5 h-6 bg-orange-500 rounded-full"></span>
+                    异常话术洞察
+                </h3>
+<span class="text-xs text-blue-600 cursor-pointer">查看详情</span>
+</div>
+<div class="space-y-4" id="insight-list">
+<div class="p-4 bg-red-50 rounded-xl border border-red-100">
+<div class="flex justify-between mb-1">
+<span class="text-sm font-bold text-red-700">"2026款发货时间延迟"</span>
+<span class="text-xs text-red-500">共 1,204 次触发</span>
+</div>
+<p class="text-xs text-red-600 opacity-80 mb-3">多名用户在该节点流转至人工，机器人现有回答"生产周期决定"被判定无法解决问题。</p>
+<div class="flex gap-2">
+<button class="bg-white text-red-700 border border-red-200 px-3 py-1 rounded-lg text-xs font-bold">立即优化话术库</button>
+</div>
+</div>
+<div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+<div class="flex justify-between mb-1">
+<span class="text-sm font-bold text-gray-700">"折叠屏屏保起泡"</span>
+<span class="text-xs text-gray-500">共 342 次触发</span>
+</div>
+<p class="text-xs text-gray-500 opacity-80">新发热点，机器人未收录答案，建议添加FAQ。</p>
+</div>
+</div>
+</div>
+<!-- 数据明细 -->
+<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+<h3 class="font-bold text-slate-800 mb-6 flex items-center gap-2">
+<span class="w-1.5 h-6 bg-green-500 rounded-full"></span>
+                    满意度详细指标
+                </h3>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-gray-500">响应及时性</span>
+<span class="font-bold">4.9/5</span>
+</div>
+<div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+<div class="bg-green-500 h-full w-[98%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-gray-500">问题解决率</span>
+<span class="font-bold">4.2/5</span>
+</div>
+<div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+<div class="bg-blue-500 h-full w-[84%]"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-sm mb-2">
+<span class="text-gray-500">态度亲和力</span>
+<span class="font-bold">4.7/5</span>
+</div>
+<div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
+<div class="bg-yellow-500 h-full w-[94%]"></div>
+</div>
+</div>
+</div>
+<div class="mt-8 p-4 bg-blue-50 rounded-xl text-center">
+<p class="text-xs text-blue-600 tracking-wide">💡 2026年Q1季度AI已累计节省人力成本约 <strong id="cost-savings">48.5万</strong> 元</p>
+</div>
+</div>
+</div>
+</main>
+
+<script>
+// ========== 数据同步逻辑 ==========
+const CRM_DATA_KEY = 'crm_ai_session_data';
+let trendChart, pieChart;
+let lastUpdateTime = Date.now();
+
+// 初始化图表
+function initCharts() {
+    // Line Chart
+    trendChart = echarts.init(document.getElementById('trendChart'));
+    trendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { top: '10%', bottom: '10%', left: '5%', right: '5%', containLabel: true },
+        xAxis: { 
+            type: 'category', 
+            data: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '23:59'],
+            axisLine: { lineStyle: { color: '#E2E8F0' } }
+        },
+        yAxis: { type: 'value', splitLine: { lineStyle: { type: 'dashed' } } },
+        series: [
+            {
+                name: '总咨询量',
+                type: 'line',
+                smooth: true,
+                data: [1200, 800, 2500, 6800, 8900, 7200, 3100],
+                itemStyle: { color: '#007AFF' },
+                areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{offset: 0, color: 'rgba(0,122,255,0.3)'}, {offset: 1, color: 'transparent'}]) }
+            },
+            {
+                name: 'AI完成量',
+                type: 'line',
+                smooth: true,
+                data: [1150, 780, 2200, 5800, 7400, 6200, 2900],
+                itemStyle: { color: '#10B981' }
+            }
+        ]
+    });
+
+    // Pie Chart
+    pieChart = echarts.init(document.getElementById('pieChart'));
+    pieChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { bottom: '5%', left: 'center', icon: 'circle' },
+        series: [{
+            type: 'pie',
+            radius: ['50%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: { borderRadius: 10, borderColor: '#fff', borderWeight: 2 },
+            label: { show: false },
+            data: [
+                { value: 1048, name: '售后咨询', itemStyle: {color: '#007AFF'} },
+                { value: 735, name: '订单查询', itemStyle: {color: '#10B981'} },
+                { value: 580, name: '活动政策', itemStyle: {color: '#F59E0B'} },
+                { value: 484, name: '物流投诉', itemStyle: {color: '#EF4444'} },
+                { value: 300, name: '其他业务', itemStyle: {color: '#64748B'} }
+            ]
+        }]
+    });
+
+    window.addEventListener('resize', () => {
+        trendChart.resize();
+        pieChart.resize();
+    });
+}
+
+// 获取共享数据
+function getSharedData() {
+    return JSON.parse(localStorage.getItem(CRM_DATA_KEY) || 'null');
+}
+
+// 更新KPI显示
+function updateKPIs() {
+    const data = getSharedData();
+    if (!data) return;
+    
+    const stats = data.stats || {};
+    
+    // 更新KPI数值
+    document.getElementById('kpi-total-consults').textContent = (stats.totalConsults || 42891).toLocaleString() + ' 人';
+    document.getElementById('kpi-ai-rate').textContent = (stats.aiBlockRate || 82.35) + '%';
+    document.getElementById('kpi-transfer-rate').textContent = (stats.transferRate || 7.4) + '%';
+    document.getElementById('kpi-satisfaction').textContent = (stats.satisfaction || 4.8) + ' / 5.0';
+    
+    // 更新实时数据
+    const sessions = data.sessions || [];
+    const pending = data.pendingTransfers || [];
+    
+    document.getElementById('online-sessions-count').textContent = sessions.filter(s => s.status === 'ai' || s.status === 'human').length;
+    document.getElementById('pending-count').textContent = pending.length;
+    document.getElementById('today-new-count').textContent = sessions.length;
+    
+    // 更新时间戳
+    document.getElementById('data-timestamp').textContent = new Date().toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// 动态更新热点洞察
+function updateInsights() {
+    const data = getSharedData();
+    if (!data || !data.sessions) return;
+    
+    // 分析会话中的问题关键词
+    const keywords = {};
+    data.sessions.forEach(session => {
+        session.messages?.forEach(msg => {
+            if (msg.role === 'user') {
+                const text = msg.text;
+                if (text.includes('物流') || text.includes('发货') || text.includes('快递')) {
+                    keywords['物流问题'] = (keywords['物流问题'] || 0) + 1;
+                }
+                if (text.includes('退') || text.includes('换') || text.includes('退货')) {
+                    keywords['退换货'] = (keywords['退换货'] || 0) + 1;
+                }
+                if (text.includes('优惠') || text.includes('券') || text.includes('折扣')) {
+                    keywords['优惠咨询'] = (keywords['优惠咨询'] || 0) + 1;
+                }
+                if (text.includes('人工') || text.includes('客服')) {
+                    keywords['转人工'] = (keywords['转人工'] || 0) + 1;
+                }
+            }
+        });
+    });
+    
+    // 动态更新洞察列表
+    const insightList = document.getElementById('insight-list');
+    let html = '';
+    
+    // 转人工热点
+    if (keywords['转人工']) {
+        html += `
+            <div class="p-4 bg-yellow-50 rounded-xl border border-yellow-100">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-bold text-yellow-700">"用户请求转人工服务"</span>
+                    <span class="text-xs text-yellow-500">共 ${keywords['转人工']} 次触发</span>
+                </div>
+                <p class="text-xs text-yellow-600 opacity-80 mb-3">用户在多个节点选择转接人工服务，可考虑优化对应话术。</p>
+            </div>
+        `;
+    }
+    
+    // 物流热点
+    if (keywords['物流问题']) {
+        html += `
+            <div class="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                <div class="flex justify-between mb-1">
+                    <span class="text-sm font-bold text-blue-700">"物流/发货咨询"</span>
+                    <span class="text-xs text-blue-500">共 ${keywords['物流问题']} 次触发</span>
+                </div>
+                <p class="text-xs text-blue-600 opacity-80 mb-3">物流相关咨询量增加，建议检查物流信息接口是否正常。</p>
+            </div>
+        `;
+    }
+    
+    // 保留原有洞察
+    html += `
+        <div class="p-4 bg-red-50 rounded-xl border border-red-100">
+            <div class="flex justify-between mb-1">
+                <span class="text-sm font-bold text-red-700">"2026款发货时间延迟"</span>
+                <span class="text-xs text-red-500">共 1,204 次触发</span>
+            </div>
+            <p class="text-xs text-red-600 opacity-80 mb-3">多名用户在该节点流转至人工，机器人现有回答"生产周期决定"被判定无法解决问题。</p>
+            <div class="flex gap-2">
+                <button class="bg-white text-red-700 border border-red-200 px-3 py-1 rounded-lg text-xs font-bold">立即优化话术库</button>
+            </div>
+        </div>
+        <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
+            <div class="flex justify-between mb-1">
+                <span class="text-sm font-bold text-gray-700">"折叠屏屏保起泡"</span>
+                <span class="text-xs text-gray-500">共 342 次触发</span>
+            </div>
+            <p class="text-xs text-gray-500 opacity-80">新发热点，机器人未收录答案，建议添加FAQ。</p>
+        </div>
+    `;
+    
+    insightList.innerHTML = html;
+}
+
+// 实时更新图表数据
+function updateCharts() {
+    const data = getSharedData();
+    if (!data) return;
+    
+    // 模拟实时数据波动
+    const baseData = [1200, 800, 2500, 6800, 8900, 7200, 3100];
+    const sessionCount = data.sessions?.length || 0;
+    const modifier = sessionCount > 0 ? sessionCount * 10 : 0;
+    
+    // 更新折线图数据
+    trendChart.setOption({
+        series: [
+            {
+                name: '总咨询量',
+                data: baseData.map(v => v + modifier + Math.floor(Math.random() * 100))
+            },
+            {
+                name: 'AI完成量',
+                data: baseData.map(v => Math.floor((v * 0.85) + modifier * 0.8 + Math.random() * 80))
+            }
+        ]
+    });
+    
+    // 更新饼图数据
+    const topicCounts = { '售后咨询': 1048, '订单查询': 735, '活动政策': 580, '物流投诉': 484, '其他业务': 300 };
+    
+    if (data.sessions) {
+        data.sessions.forEach(session => {
+            session.messages?.forEach(msg => {
+                if (msg.role === 'user') {
+                    const text = msg.text;
+                    if (text.includes('退') || text.includes('换') || text.includes('售')) {
+                        topicCounts['售后咨询']++;
+                    } else if (text.includes('物流') || text.includes('发货') || text.includes('订单')) {
+                        topicCounts['订单查询']++;
+                    } else if (text.includes('优惠') || text.includes('券')) {
+                        topicCounts['活动政策']++;
+                    }
+                }
+            });
+        });
+    }
+    
+    pieChart.setOption({
+        series: [{
+            data: [
+                { value: topicCounts['售后咨询'], name: '售后咨询', itemStyle: {color: '#007AFF'} },
+                { value: topicCounts['订单查询'], name: '订单查询', itemStyle: {color: '#10B981'} },
+                { value: topicCounts['活动政策'], name: '活动政策', itemStyle: {color: '#F59E0B'} },
+                { value: topicCounts['物流投诉'], name: '物流投诉', itemStyle: {color: '#EF4444'} },
+                { value: topicCounts['其他业务'], name: '其他业务', itemStyle: {color: '#64748B'} }
+            ]
+        }]
+    });
+}
+
+// 轮询更新
+function startPolling() {
+    setInterval(() => {
+        const updateTime = localStorage.getItem('crm_data_updated');
+        if (updateTime && parseInt(updateTime) > lastUpdateTime) {
+            lastUpdateTime = parseInt(updateTime);
+            updateKPIs();
+            updateCharts();
+        }
+    }, 1000);
+    
+    // 每5秒更新一次洞察
+    setInterval(updateInsights, 5000);
+}
+
+// 监听存储变化
+window.addEventListener('storage', (e) => {
+    if (e.key === 'crm_data_updated') {
+        updateKPIs();
+        updateCharts();
+    }
+});
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    initCharts();
+    updateKPIs();
+    updateInsights();
+    startPolling();
+});
+</script>
+</body>
+</html>

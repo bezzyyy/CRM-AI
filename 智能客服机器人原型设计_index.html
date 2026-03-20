@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>小AI - 智能客服</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<style>
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message-anim { animation: slideUp 0.15s ease-out forwards; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E5E7EB; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-gray-200 h-screen flex items-center justify-center font-sans">
+<!-- 移动端容器 -->
+<div class="w-[375px] h-[812px] bg-[#F8F8F8] rounded-[40px] shadow-2xl overflow-hidden border-[8px] border-gray-900 relative flex flex-col">
+<!-- 状态栏模拟 -->
+<div class="h-11 bg-white flex justify-between items-center px-8 shrink-0">
+<span class="text-xs font-bold">14:20</span>
+<div class="flex gap-1.5">
+<span class="iconify" data-icon="material-symbols:signal-cellular-4-bar"></span>
+<span class="iconify" data-icon="material-symbols:wifi"></span>
+<span class="iconify" data-icon="material-symbols:battery-full"></span>
+</div>
+</div>
+<!-- 顶部 Header -->
+<header class="h-16 bg-white border-b flex items-center justify-between px-4 shrink-0">
+<div class="flex items-center gap-3">
+<div class="relative">
+<img alt="AI Avatar" class="w-10 h-10 rounded-full bg-blue-100 p-1" src="https://modao.cc/agent-py/media/generated_images/2026-03-19/14a60fa1430f4a60a27d88601f0383d7.jpg"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white rounded-full"></span>
+</div>
+<div>
+<h1 class="text-[15px] font-bold text-gray-800">小AI</h1>
+<p class="text-[11px] text-gray-400" id="status-text">在线</p>
+</div>
+</div>
+<div class="flex gap-4 text-gray-500">
+<span class="iconify cursor-pointer text-xl" data-icon="line-md:search"></span>
+<span class="iconify cursor-pointer text-xl" data-icon="tabler:dots-vertical"></span>
+</div>
+</header>
+<!-- 对话 Canvas 区 -->
+<main class="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar" id="chat-canvas">
+<!-- 时间 -->
+<div class="text-center text-[12px] text-gray-400 my-4">今天 2026年3月19日</div>
+<!-- 机器人欢迎语 -->
+<div class="flex gap-2 message-anim">
+<img alt="Bot" class="w-8 h-8 rounded-full" src="https://modao.cc/agent-py/media/generated_images/2026-03-19/9c02bd024fdf4c4090a5a5f1614ce8ff.jpg"/>
+<div class="max-w-[75%]">
+<div class="bg-white p-3 rounded-[18px] rounded-bl-none shadow-sm text-[15px] leading-relaxed text-gray-800">
+                        您好！我是您的智能助手小AI。很高兴为您服务！您可以咨询订单、售后或最新的产品信息。👇
+                    </div>
+</div>
+</div>
+<!-- 结构化 FAQ 卡片 -->
+<div class="flex gap-2 message-anim ml-10">
+<div class="bg-white rounded-2xl shadow-sm border overflow-hidden w-full">
+<div class="p-3 border-b bg-gray-50 text-xs font-bold text-gray-500">猜你想问</div>
+<div class="divide-y">
+<button class="w-full text-left p-3 text-[14px] text-blue-600 hover:bg-blue-50 transition-colors" onclick="sendMsg('订单物流查询')">📦 订单物流查询</button>
+<button class="w-full text-left p-3 text-[14px] text-blue-600 hover:bg-blue-50 transition-colors" onclick="sendMsg('退换货政策')">🔄 退换货政策</button>
+<button class="w-full text-left p-3 text-[14px] text-blue-600 hover:bg-blue-50 transition-colors" onclick="sendMsg('如何领取优惠券')">🎫 如何领取优惠券</button>
+</div>
+</div>
+</div>
+</main>
+<!-- 药丸快捷栏 -->
+<div class="px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar whitespace-nowrap">
+<span class="px-3 py-1.5 bg-white border border-blue-100 text-blue-600 rounded-full text-xs cursor-pointer hover:bg-blue-50" onclick="sendMsg('联系人工')">人工客服</span>
+<span class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs cursor-pointer" onclick="sendMsg('我的特权')">我的特权</span>
+<span class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs cursor-pointer" onclick="sendMsg('最近新品')">最近新品</span>
+<span class="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-full text-xs cursor-pointer" onclick="sendMsg('查看评价')">查看评价</span>
+</div>
+<!-- 底部 Footer 输入区 -->
+<footer class="bg-white p-4 pb-8 border-t">
+<div class="flex items-center gap-3">
+<span class="iconify text-2xl text-gray-400 cursor-pointer" data-icon="fluent:add-circle-24-regular"></span>
+<div class="flex-1 bg-[#F3F4F6] rounded-2xl flex items-center px-3 py-2">
+<input class="bg-transparent flex-1 text-[15px] outline-none" id="user-input" placeholder="输入您的问题..." type="text"/>
+<span class="iconify text-xl text-gray-400 ml-2" data-icon="fluent:emoji-24-regular"></span>
+</div>
+<button class="w-10 h-10 bg-[#007AFF] text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-200" onclick="handleSend()">
+<span class="iconify text-xl" data-icon="iconamoon:send-fill"></span>
+</button>
+</div>
+</footer>
+</div>
+<script>
+// ========== 共享数据管理层 ==========
+const CRM_DATA_KEY = 'crm_ai_session_data';
+
+// 初始化共享数据
+function initSharedData() {
+    let data = localStorage.getItem(CRM_DATA_KEY);
+    if (!data) {
+        data = {
+            sessions: [],
+            stats: {
+                totalConsults: 42891,
+                aiBlockRate: 82.35,
+                transferRate: 7.4,
+                satisfaction: 4.8
+            },
+            pendingTransfers: []
+        };
+        localStorage.setItem(CRM_DATA_KEY, JSON.stringify(data));
+    }
+    return JSON.parse(localStorage.getItem(CRM_DATA_KEY));
+}
+
+// 更新共享数据
+function updateSharedData(updates) {
+    const data = initSharedData();
+    Object.assign(data, updates);
+    localStorage.setItem(CRM_DATA_KEY, JSON.stringify(data));
+    localStorage.setItem('crm_data_updated', Date.now().toString());
+}
+
+// 记录会话消息
+function logMessage(role, text) {
+    const data = initSharedData();
+    const sessionId = data.currentSessionId || ('session_' + Date.now());
+    data.currentSessionId = sessionId;
+    
+    if (!data.sessions) data.sessions = [];
+    let session = data.sessions.find(s => s.id === sessionId);
+    if (!session) {
+        session = {
+            id: sessionId,
+            userId: '访客_' + Math.floor(Math.random() * 9000 + 1000),
+            userName: '访客',
+            status: 'ai',
+            messages: [],
+            createdAt: new Date().toISOString(),
+            tags: [],
+            isHighValue: Math.random() > 0.7
+        };
+        data.sessions.unshift(session);
+    }
+    
+    session.messages.push({
+        role: role,
+        text: text,
+        timestamp: new Date().toISOString()
+    });
+    
+    updateSharedData(data);
+    return session;
+}
+
+// 请求转人工
+function requestTransfer() {
+    const data = initSharedData();
+    const sessionId = data.currentSessionId || ('session_' + Date.now());
+    
+    let session = data.sessions?.find(s => s.id === sessionId);
+    if (session) {
+        session.status = 'transfer';
+        session.transferAt = new Date().toISOString();
+    } else {
+        session = {
+            id: sessionId,
+            userId: '访客_' + Math.floor(Math.random() * 9000 + 1000),
+            userName: '访客',
+            status: 'transfer',
+            messages: [],
+            createdAt: new Date().toISOString(),
+            tags: ['人工转接'],
+            isHighValue: Math.random() > 0.7
+        };
+        data.sessions = data.sessions || [];
+        data.sessions.unshift(session);
+    }
+    
+    if (!data.pendingTransfers) data.pendingTransfers = [];
+    data.pendingTransfers.push({
+        sessionId: sessionId,
+        userName: session.userName,
+        queuePosition: data.pendingTransfers.length + 1,
+        requestTime: new Date().toISOString()
+    });
+    
+    data.stats.totalConsults += 1;
+    data.stats.transferRate = Math.round((data.pendingTransfers.length / data.stats.totalConsults) * 100 * 100) / 100;
+    
+    updateSharedData(data);
+    return sessionId;
+}
+
+// ========== 聊天界面逻辑 ==========
+const chatCanvas = document.getElementById('chat-canvas');
+const userInput = document.getElementById('user-input');
+const statusText = document.getElementById('status-text');
+
+function appendMessage(role, text, isCard = false) {
+    const div = document.createElement('div');
+    div.className = `flex gap-2 message-anim ${role === 'user' ? 'flex-row-reverse' : ''}`;
+    
+    const avatar = role === 'user' ? 'https://modao.cc/agent/placeholder.svg' : 'https://modao.cc/agent-py/media/generated_images/2026-03-19/9c02bd024fdf4c4090a5a5f1614ce8ff.jpg';
+    const bgColor = role === 'user' ? 'bg-[#007AFF] text-white rounded-br-none' : 'bg-white text-gray-800 rounded-bl-none shadow-sm';
+
+    div.innerHTML = `
+        <img src="${avatar}" class="w-8 h-8 rounded-full">
+        <div class="max-w-[75%]">
+            <div class="${bgColor} p-3 rounded-[18px] text-[15px] leading-relaxed">
+                ${text}
+            </div>
+        </div>
+    `;
+    chatCanvas.appendChild(div);
+    chatCanvas.scrollTop = chatCanvas.scrollHeight;
+}
+
+function handleSend() {
+    const text = userInput.value.trim();
+    if(!text) return;
+    sendMsg(text);
+    userInput.value = '';
+}
+
+function sendMsg(text) {
+    appendMessage('user', text);
+    logMessage('user', text);
+    
+    // 模拟输入中
+    setTimeout(() => {
+        statusText.innerText = '小AI 正在输入...';
+        statusText.classList.add('text-blue-500');
+    }, 500);
+
+    // 模拟AI回复
+    setTimeout(() => {
+        statusText.innerText = '在线';
+        statusText.classList.remove('text-blue-500');
+        
+        if(text.includes('人工')) {
+            const sessionId = requestTransfer();
+            appendMessage('bot', `正在为您转接专属客服 <span class="text-xs text-gray-400">(已排队，请稍候)</span><div class="mt-2 p-2 bg-blue-50 rounded-lg text-xs">会话ID: ${sessionId.slice(-8)}</div>`);
+            setTimeout(() => {
+                statusText.innerText = '已转人工';
+                statusText.classList.add('text-green-500');
+            }, 2000);
+        } else if(text.includes('物流')) {
+            appendMessage('bot', '您的订单 [SF2026319001] 已到达上海分拨中心，预计明天送达。');
+            logMessage('bot', '您的订单 [SF2026319001] 已到达上海分拨中心，预计明天送达。');
+        } else if(text.includes('退') || text.includes('换')) {
+            appendMessage('bot', '您好！退换货政策如下：签收7天内可申请无理由退换，15天内可申请质量问题退换。请点击「售后专区」了解更多。');
+            logMessage('bot', '您好！退换货政策如下：签收7天内可申请无理由退换，15天内可申请质量问题退换。请点击「售后专区」了解更多。');
+        } else if(text.includes('优惠') || text.includes('券')) {
+            appendMessage('bot', '🎫 当前有以下优惠券可用：<br>• 新客专享满500减50（立即领取）<br>• 会员专属9折券<br>• 满额赠礼活动进行中');
+            logMessage('bot', '🎫 当前有以下优惠券可用：满500减50、会员9折券、满额赠礼活动');
+        } else {
+            appendMessage('bot', '收到！关于"' + text + '"，我正在查询数据库... 目前来看，我们2026款旗舰产品正在预售中，配置全面升级。');
+            logMessage('bot', `收到！关于"${text}"，我正在查询数据库... 目前来看，我们2026款旗舰产品正在预售中，配置全面升级。`);
+        }
+    }, 1500);
+}
+
+// 回车发送
+userInput.addEventListener('keypress', (e) => {
+    if(e.key === 'Enter') handleSend();
+});
+
+// ========== 监听来自其他页面的消息 ==========
+window.addEventListener('storage', (e) => {
+    if (e.key === 'crm_human_response') {
+        const data = initSharedData();
+        const response = JSON.parse(e.newValue);
+        if (response.sessionId === data.currentSessionId) {
+            appendMessage('bot', `<div class="border-t pt-2 mt-2"><span class="text-green-600 font-bold">人工客服回复：</span>${response.text}</div>`);
+        }
+    }
+});
+
+// 初始化
+initSharedData();
+</script>
+</body>
+</html>

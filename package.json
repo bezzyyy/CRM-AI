@@ -1,0 +1,12 @@
+{
+  "name": "crm-ai-chatbot",
+  "version": "1.0.0",
+  "description": "智能客服机器人原型 - 多页面交互系统",
+  "scripts": {
+    "dev": "echo \"打开 index.html 即可预览\"",
+    "start": "open index.html"
+  },
+  "keywords": ["chatbot", "crm", "ai", "customer-service"],
+  "author": "",
+  "license": "MIT"
+}

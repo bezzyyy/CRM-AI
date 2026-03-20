@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>工作台 - 智能客服后台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+<style>
+    @keyframes pulse-notify {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    .notify-pulse { animation: pulse-notify 1s ease-in-out infinite; }
+</style>
+</head>
+<body class="bg-[#F3F4F6] h-screen flex flex-col font-sans">
+<!-- 顶栏 -->
+<header class="h-16 bg-white border-b px-6 flex items-center justify-between shrink-0">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 text-[#007AFF] font-bold text-xl">
+<span class="iconify text-3xl" data-icon="tabler:robot"></span>
+<span>AI-Center 后台系统</span>
+</div>
+<nav class="ml-10 flex gap-6 text-sm font-medium text-gray-500">
+<a class="text-blue-600 border-b-2 border-blue-600 h-16 flex items-center" href="#">对话工作台</a>
+<a class="text-black-600 border-b-2 h-16 flex items-center" href="智能客服机器人原型设计_admin.html">数据中心</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 bg-green-50 text-green-600 px-3 py-1 rounded-full text-sm">
+<span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                在线服务中
+            </div>
+<div class="flex gap-4 text-gray-400 border-l pl-4">
+<span class="iconify text-xl cursor-pointer" data-icon="solar:bell-linear" id="notification-bell"></span>
+<span class="iconify text-xl cursor-pointer" data-icon="solar:settings-linear"></span>
+<img class="w-8 h-8 rounded-full border" src="https://modao.cc/agent/placeholder.svg"/>
+</div>
+</div>
+</header>
+<!-- 新会话通知条 -->
+<div class="hidden bg-yellow-50 border-b border-yellow-100 px-6 py-3 flex items-center justify-between" id="new-session-banner">
+<div class="flex items-center gap-3">
+<span class="iconify text-yellow-600" data-icon="solar:bell-bing-linear"></span>
+<span class="text-sm font-medium text-yellow-800" id="new-session-text">收到新的转接请求！</span>
+</div>
+<button class="text-xs text-yellow-600 hover:text-yellow-800 font-medium" onclick="acceptTransfer()">立即接入 →</button>
+</div>
+<div class="flex flex-1 overflow-hidden">
+<!-- 左侧：会话列表 -->
+<aside class="w-80 bg-white border-r flex flex-col shrink-0">
+<div class="p-4 border-b">
+<div class="relative">
+<input class="w-full bg-gray-100 rounded-lg py-2 pl-10 text-sm outline-none" placeholder="搜索会话、用户UID..." type="text"/>
+<span class="iconify absolute left-3 top-2.5 text-gray-400" data-icon="line-md:search"></span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto" id="session-list">
+<!-- 转接队列高亮项 -->
+<div class="p-4 border-b bg-blue-50 border-l-4 border-blue-600 cursor-pointer" data-session-id="pending_transfer">
+<div class="flex justify-between items-start mb-1">
+<span class="font-bold text-sm" id="transfer-user-name">等待接入</span>
+<span class="text-[10px] text-gray-400" id="transfer-time">--:--</span>
+</div>
+<div class="text-xs text-blue-600 truncate" id="transfer-preview">【等待接入】用户正在排队...</div>
+<div class="mt-2 flex gap-1">
+<span class="px-2 py-0.5 bg-yellow-100 text-yellow-600 text-[10px] rounded">待接入</span>
+<span class="px-2 py-0.5 bg-blue-100 text-blue-600 text-[10px] rounded" id="transfer-tag">高价值</span>
+</div>
+</div>
+<!-- 模拟更多列表 -->
+<div id="mock-sessions"></div>
+</div>
+</aside>
+<!-- 中部：聊天窗口 -->
+<main class="flex-1 flex flex-col bg-white">
+<div class="h-14 border-b flex items-center justify-between px-6 shrink-0">
+<div class="flex items-center gap-3">
+<span class="font-bold" id="current-user-name">王先生</span>
+<span class="text-xs text-gray-400" id="current-user-id">UID: 202603198844</span>
+<span class="px-2 py-0.5 bg-green-100 text-green-600 text-[10px] rounded" id="session-status">AI服务中</span>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 border rounded-lg text-xs hover:bg-gray-50">转接</button>
+<button class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs shadow-md shadow-blue-200" onclick="switchToHuman()">人工切入</button>
+<button class="px-3 py-1.5 border rounded-lg text-xs text-red-500 border-red-100 hover:bg-red-50" onclick="endSession()">结束会话</button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50/50" id="chat-messages">
+<!-- 会话内容模块 -->
+<div class="flex gap-3">
+<img class="w-8 h-8 rounded-full border shadow-sm" src="https://modao.cc/agent/placeholder.svg"/>
+<div class="max-w-[60%]">
+<p class="text-[10px] text-gray-400 mb-1 ml-1">王先生 · 14:15</p>
+<div class="bg-white p-3 rounded-xl rounded-tl-none border shadow-sm text-sm">
+                            你们这个2026款的手机到底什么时候发货？我都等了三天了还没动静。
+                        </div>
+</div>
+</div>
+<div class="flex flex-row-reverse gap-3">
+<div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-[10px]">AI</div>
+<div class="max-w-[60%] flex flex-col items-end">
+<p class="text-[10px] text-gray-400 mb-1 mr-1">小AI机器人 · 14:15</p>
+<div class="bg-blue-600 text-white p-3 rounded-xl rounded-tr-none shadow-md text-sm">
+                            您好，王先生！非常抱歉拉低了您的期待。经查询，您的订单 SF12345678 正在排队质检中，由于是新款旗舰机型，我们追求极致品质，预计最晚后天发出。
+                        </div>
+<div class="mt-2 text-[10px] text-green-500 italic">知识库匹配度：98%</div>
+</div>
+</div>
+<div class="flex gap-3">
+<img class="w-8 h-8 rounded-full border shadow-sm" src="https://modao.cc/agent/placeholder.svg"/>
+<div class="max-w-[60%]">
+<p class="text-[10px] text-gray-400 mb-1 ml-1">王先生 · 14:20</p>
+<div class="bg-white p-3 rounded-xl rounded-tl-none border shadow-sm text-sm text-red-500 font-medium">
+                            太慢了！能不能帮我催一下？等不了了。
+                        </div>
+<div class="mt-2 p-2 bg-red-50 rounded border border-red-100 flex items-center gap-2">
+<span class="iconify text-red-500" data-icon="material-symbols:warning-rounded"></span>
+<span class="text-[10px] text-red-600 font-bold">情绪预警：愤怒指数 85% - 建议人工切入</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 输入区域 -->
+<div class="p-4 border-t bg-white">
+<div class="mb-4 flex gap-2">
+<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs cursor-pointer hover:bg-gray-200" onclick="insertQuickReply('#物流查询语句')">#物流查询语句</span>
+<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs cursor-pointer hover:bg-gray-200" onclick="insertQuickReply('#退款流程引导')">#退款流程引导</span>
+<span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs cursor-pointer hover:bg-gray-200" onclick="insertQuickReply('#安抚话术')">#安抚话术</span>
+</div>
+<div class="border rounded-xl p-2 h-32 flex flex-col">
+<textarea class="flex-1 w-full outline-none resize-none text-sm" id="human-reply-input" placeholder="输入人工回复内容，按下 Ctrl+Enter 发送..."></textarea>
+<div class="flex justify-between items-center text-gray-400">
+<div class="flex gap-4 px-2">
+<span class="iconify cursor-pointer text-xl" data-icon="solar:camera-linear"></span>
+<span class="iconify cursor-pointer text-xl" data-icon="solar:gallery-linear"></span>
+<span class="iconify cursor-pointer text-xl" data-icon="solar:folder-2-linear"></span>
+</div>
+<button class="bg-blue-600 text-white px-5 py-1.5 rounded-lg text-sm font-medium" onclick="sendHumanReply()">发送</button>
+</div>
+</div>
+</div>
+</main>
+<!-- 右侧：侧边详情栏 -->
+<aside class="w-80 bg-white border-l overflow-y-auto">
+<div class="p-6">
+<!-- 用户画像 -->
+<div class="flex flex-col items-center mb-6">
+<img class="w-20 h-20 rounded-full border p-1 mb-2" src="https://modao.cc/agent/placeholder.svg"/>
+<h3 class="font-bold text-lg" id="sidebar-user-name">王先生</h3>
+<p class="text-xs text-gray-400">黄金会员 · 活跃等级 L5</p>
+</div>
+<!-- 数据指标 -->
+<div class="grid grid-cols-2 gap-3 mb-8">
+<div class="p-3 bg-gray-50 rounded-xl">
+<p class="text-[10px] text-gray-400">累计消费</p>
+<p class="font-bold text-blue-600" id="sidebar-total-consume">¥12,800</p>
+</div>
+<div class="p-3 bg-gray-50 rounded-xl">
+<p class="text-[10px] text-gray-400">咨询次数</p>
+<p class="font-bold" id="sidebar-consult-count">42 次</p>
+</div>
+</div>
+<!-- 工单处理 -->
+<div class="mb-8">
+<h4 class="text-sm font-bold mb-4 flex justify-between items-center">
+                        关联工单
+                        <span class="text-blue-600 text-xs cursor-pointer">+ 新建</span>
+</h4>
+<div class="space-y-3" id="work-orders">
+<div class="p-3 border rounded-xl text-xs relative overflow-hidden">
+<div class="absolute top-0 right-0 px-2 py-0.5 bg-yellow-400 text-white text-[8px] transform">处理中</div>
+<p class="font-bold mb-1">【退差价】2026新款保价咨询</p>
+<p class="text-gray-400">更新于 2026.03.18</p>
+</div>
+<div class="p-3 border rounded-xl text-xs relative overflow-hidden bg-gray-50 opacity-60">
+<div class="absolute top-0 right-0 px-2 py-0.5 bg-gray-400 text-white text-[8px] transform">已关闭</div>
+<p class="font-bold mb-1">【物流】期待发货加速</p>
+<p class="text-gray-400">更新于 2026.02.10</p>
+</div>
+</div>
+</div>
+<!-- 标签管理 -->
+<div>
+<h4 class="text-sm font-bold mb-3">用户标签</h4>
+<div class="flex flex-wrap gap-2" id="user-tags">
+<span class="px-2 py-1 bg-blue-50 text-blue-600 text-[10px] rounded border border-blue-100">数码发烧友</span>
+<span class="px-2 py-1 bg-red-50 text-red-600 text-[10px] rounded border border-red-100">关注优惠</span>
+<span class="px-2 py-1 bg-green-50 text-green-600 text-[10px] rounded border border-green-100">老用户</span>
+<span class="px-2 py-1 border border-dashed rounded text-[10px] text-gray-400 cursor-pointer">+ 贴标签</span>
+</div>
+</div>
+</div>
+</aside>
+</div>
+
+<script>
+// ========== 共享数据管理层 ==========
+const CRM_DATA_KEY = 'crm_ai_session_data';
+let currentSessionId = null;
+let pollingInterval = null;
+
+// 初始化
+function initAgentData() {
+    const data = JSON.parse(localStorage.getItem(CRM_DATA_KEY) || JSON.stringify({
+        sessions: [],
+        stats: { totalConsults: 42891, aiBlockRate: 82.35, transferRate: 7.4, satisfaction: 4.8 },
+        pendingTransfers: []
+    }));
+    localStorage.setItem(CRM_DATA_KEY, JSON.stringify(data));
+    return data;
+}
+
+function getSharedData() {
+    return JSON.parse(localStorage.getItem(CRM_DATA_KEY) || 'null');
+}
+
+function updateSharedData(updates) {
+    const data = getSharedData() || initAgentData();
+    Object.assign(data, updates);
+    localStorage.setItem(CRM_DATA_KEY, JSON.stringify(data));
+    localStorage.setItem('crm_data_updated', Date.now().toString());
+}
+
+// 监听新会话
+function checkPendingTransfers() {
+    const data = getSharedData();
+    if (!data) return;
+    
+    const pending = data.pendingTransfers || [];
+    const banner = document.getElementById('new-session-banner');
+    const preview = document.getElementById('transfer-preview');
+    const userName = document.getElementById('transfer-user-name');
+    const time = document.getElementById('transfer-time');
+    const tag = document.getElementById('transfer-tag');
+    
+    if (pending.length > 0) {
+        banner.classList.remove('hidden');
+        banner.classList.add('notify-pulse');
+        
+        const latest = pending[pending.length - 1];
+        preview.textContent = '【转接中】用户请求人工服务';
+        userName.textContent = latest.userName;
+        time.textContent = new Date(latest.requestTime).toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'});
+        tag.textContent = latest.isHighValue ? '高价值' : '普通';
+        
+        // 如果当前没有选中的会话，自动选中第一个待接入
+        if (!currentSessionId || currentSessionId === 'pending_transfer') {
+            currentSessionId = latest.sessionId;
+        }
+    } else {
+        banner.classList.add('hidden');
+        banner.classList.remove('notify-pulse');
+    }
+}
+
+// 接入转接会话
+function acceptTransfer() {
+    const data = getSharedData();
+    if (!data || !data.pendingTransfers || data.pendingTransfers.length === 0) return;
+    
+    const transfer = data.pendingTransfers.shift();
+    currentSessionId = transfer.sessionId;
+    
+    // 找到对应会话
+    let session = data.sessions.find(s => s.id === currentSessionId);
+    if (session) {
+        session.status = 'human';
+        session.acceptedAt = new Date().toISOString();
+        
+        // 更新UI
+        document.getElementById('session-status').textContent = '人工服务中';
+        document.getElementById('session-status').className = 'px-2 py-0.5 bg-blue-100 text-blue-600 text-[10px] rounded';
+        document.getElementById('transfer-preview').textContent = '【已接入】会话进行中';
+        
+        // 显示历史消息
+        renderSessionMessages(session);
+        updateSidebarInfo(session);
+    }
+    
+    updateSharedData(data);
+}
+
+// 渲染会话消息
+function renderSessionMessages(session) {
+    const chatArea = document.getElementById('chat-messages');
+    chatArea.innerHTML = '';
+    
+    if (session && session.messages) {
+        session.messages.forEach(msg => {
+            const div = document.createElement('div');
+            div.className = `flex gap-3 ${msg.role === 'bot' ? 'flex-row-reverse' : ''}`;
+            
+            if (msg.role === 'user') {
+                div.innerHTML = `
+                    <img class="w-8 h-8 rounded-full border shadow-sm" src="https://modao.cc/agent/placeholder.svg"/>
+                    <div class="max-w-[60%]">
+                        <p class="text-[10px] text-gray-400 mb-1 ml-1">${session.userName} · ${new Date(msg.timestamp).toLocaleTimeString()}</p>
+                        <div class="bg-white p-3 rounded-xl rounded-tl-none border shadow-sm text-sm">${msg.text}</div>
+                    </div>
+                `;
+            } else if (msg.role === 'bot') {
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-[10px]">AI</div>
+                    <div class="max-w-[60%] flex flex-col items-end">
+                        <p class="text-[10px] text-gray-400 mb-1 mr-1">小AI · ${new Date(msg.timestamp).toLocaleTimeString()}</p>
+                        <div class="bg-blue-600 text-white p-3 rounded-xl rounded-tr-none shadow-md text-sm">${msg.text}</div>
+                    </div>
+                `;
+            } else if (msg.role === 'human') {
+                div.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white font-bold text-[10px]">人工</div>
+                    <div class="max-w-[60%] flex flex-col items-end">
+                        <p class="text-[10px] text-gray-400 mb-1 mr-1">人工客服 · ${new Date(msg.timestamp).toLocaleTimeString()}</p>
+                        <div class="bg-green-600 text-white p-3 rounded-xl rounded-tr-none shadow-md text-sm">${msg.text}</div>
+                    </div>
+                `;
+            }
+            
+            chatArea.appendChild(div);
+        });
+    }
+    
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// 更新侧边栏信息
+function updateSidebarInfo(session) {
+    if (session) {
+        document.getElementById('current-user-name').textContent = session.userName || '访客';
+        document.getElementById('sidebar-user-name').textContent = session.userName || '访客';
+        document.getElementById('current-user-id').textContent = 'UID: ' + (session.userId || '未知');
+        
+        // 模拟数据
+        const consumptions = ['¥8,500', '¥12,800', '¥6,200', '¥15,000'];
+        const consults = ['28 次', '42 次', '15 次', '60 次'];
+        const randomIdx = Math.floor(Math.random() * 4);
+        document.getElementById('sidebar-total-consume').textContent = consumptions[randomIdx];
+        document.getElementById('sidebar-consult-count').textContent = consults[randomIdx];
+        
+        if (session.isHighValue) {
+            document.getElementById('sidebar-user-name').parentElement.querySelector('p').textContent = '黄金会员 · 活跃等级 L5';
+        } else {
+            document.getElementById('sidebar-user-name').parentElement.querySelector('p').textContent = '普通会员 · 活跃等级 L2';
+        }
+    }
+}
+
+// 切入人工模式
+function switchToHuman() {
+    const data = getSharedData();
+    if (data && currentSessionId) {
+        let session = data.sessions.find(s => s.id === currentSessionId);
+        if (!session) {
+            session = {
+                id: currentSessionId,
+                userId: '访客_' + Math.floor(Math.random() * 9000 + 1000),
+                userName: '访客',
+                status: 'human',
+                messages: [],
+                createdAt: new Date().toISOString()
+            };
+            data.sessions.unshift(session);
+        }
+        session.status = 'human';
+        session.humanJoinedAt = new Date().toISOString();
+        
+        // 更新统计
+        data.stats.transferRate = Math.round((data.pendingTransfers?.length || 0) / data.stats.totalConsults * 100 * 100) / 100;
+        
+        updateSharedData(data);
+        
+        document.getElementById('session-status').textContent = '人工服务中';
+        document.getElementById('session-status').className = 'px-2 py-0.5 bg-green-100 text-green-600 text-[10px] rounded';
+    }
+}
+
+// 发送人工回复
+function sendHumanReply() {
+    const input = document.getElementById('human-reply-input');
+    const text = input.value.trim();
+    if (!text) return;
+    
+    const data = getSharedData();
+    if (data && currentSessionId) {
+        let session = data.sessions.find(s => s.id === currentSessionId);
+        if (session) {
+            session.messages.push({
+                role: 'human',
+                text: text,
+                timestamp: new Date().toISOString()
+            });
+            updateSharedData(data);
+            
+            // 通知用户端
+            localStorage.setItem('crm_human_response', JSON.stringify({
+                sessionId: currentSessionId,
+                text: text,
+                timestamp: new Date().toISOString()
+            }));
+        }
+    }
+    
+    // 清空输入并刷新显示
+    input.value = '';
+    if (currentSessionId) {
+        const session = getSharedData()?.sessions.find(s => s.id === currentSessionId);
+        renderSessionMessages(session);
+    }
+}
+
+// 结束会话
+function endSession() {
+    const data = getSharedData();
+    if (data && currentSessionId) {
+        let session = data.sessions.find(s => s.id === currentSessionId);
+        if (session) {
+            session.status = 'closed';
+            session.endedAt = new Date().toISOString();
+            updateSharedData(data);
+        }
+    }
+    
+    // 清理状态
+    currentSessionId = null;
+    document.getElementById('chat-messages').innerHTML = '<div class="text-center text-gray-400 py-10">会话已结束，请选择其他会话</div>';
+}
+
+// 快捷回复插入
+function insertQuickReply(text) {
+    const input = document.getElementById('human-reply-input');
+    input.value += (input.value ? '\n' : '') + text;
+    input.focus();
+}
+
+// 监听键盘
+document.getElementById('human-reply-input').addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+        sendHumanReply();
+    }
+});
+
+// 生成模拟会话列表
+function renderMockSessions() {
+    const container = document.getElementById('mock-sessions');
+    const sessions = [
+        { name: '李女士', preview: '折叠屏有气泡怎么处理...', tag: '售后', tagColor: 'bg-gray-100 text-gray-500' },
+        { name: '张先生', preview: '优惠券无法使用怎么办', tag: '活动', tagColor: 'bg-orange-100 text-orange-600' },
+        { name: '访客_5821', preview: '想退货但是过了7天', tag: '售后', tagColor: 'bg-gray-100 text-gray-500' }
+    ];
+    
+    container.innerHTML = sessions.map((s, i) => `
+        <div class="p-4 border-b hover:bg-gray-50 cursor-pointer transition-colors" onclick="selectMockSession(${i})">
+            <div class="flex justify-between items-start mb-1">
+                <span class="font-bold text-sm text-gray-700">${s.name}</span>
+                <span class="text-[10px] text-gray-400">${13 - i}:${45 + i}0</span>
+            </div>
+            <div class="text-xs text-gray-500 truncate">${s.preview}</div>
+            <div class="mt-2 flex gap-1">
+                <span class="px-2 py-0.5 ${s.tagColor} text-[10px] rounded">${s.tag}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function selectMockSession(idx) {
+    // 模拟选中已有会话
+    const sessions = [
+        { name: '李女士', messages: [
+            { role: 'user', text: '折叠屏有气泡怎么处理', timestamp: new Date(Date.now() - 300000).toISOString() },
+            { role: 'bot', text: '您好！关于折叠屏气泡问题，请提供屏幕照片以便核实...', timestamp: new Date(Date.now() - 280000).toISOString() }
+        ]},
+        { name: '张先生', messages: [
+            { role: 'user', text: '优惠券无法使用怎么办', timestamp: new Date(Date.now() - 600000).toISOString() }
+        ]},
+        { name: '访客_5821', messages: [
+            { role: 'user', text: '想退货但是过了7天', timestamp: new Date(Date.now() - 900000).toISOString() }
+        ]}
+    ];
+    
+    const session = sessions[idx];
+    currentSessionId = 'mock_session_' + idx;
+    
+    document.getElementById('current-user-name').textContent = session.name;
+    document.getElementById('sidebar-user-name').textContent = session.name;
+    document.getElementById('session-status').textContent = 'AI服务中';
+    document.getElementById('session-status').className = 'px-2 py-0.5 bg-green-100 text-green-600 text-[10px] rounded';
+    
+    const chatArea = document.getElementById('chat-messages');
+    chatArea.innerHTML = '';
+    
+    session.messages.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `flex gap-3 ${msg.role === 'bot' ? 'flex-row-reverse' : ''}`;
+        
+        if (msg.role === 'user') {
+            div.innerHTML = `
+                <img class="w-8 h-8 rounded-full border shadow-sm" src="https://modao.cc/agent/placeholder.svg"/>
+                <div class="max-w-[60%]">
+                    <p class="text-[10px] text-gray-400 mb-1 ml-1">${session.name} · ${new Date(msg.timestamp).toLocaleTimeString()}</p>
+                    <div class="bg-white p-3 rounded-xl rounded-tl-none border shadow-sm text-sm">${msg.text}</div>
+                </div>
+            `;
+        } else {
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-[10px]">AI</div>
+                <div class="max-w-[60%] flex flex-col items-end">
+                    <p class="text-[10px] text-gray-400 mb-1 mr-1">小AI · ${new Date(msg.timestamp).toLocaleTimeString()}</p>
+                    <div class="bg-blue-600 text-white p-3 rounded-xl rounded-tr-none shadow-md text-sm">${msg.text}</div>
+                </div>
+            `;
+        }
+        
+        chatArea.appendChild(div);
+    });
+    
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+// 启动轮询
+checkPendingTransfers();
+renderMockSessions();
+setInterval(checkPendingTransfers, 2000);
+
+// 监听数据更新
+window.addEventListener('storage', (e) => {
+    if (e.key === 'crm_data_updated') {
+        checkPendingTransfers();
+    }
+});
+</script>
+</body>
+</html>
